@@ -5,7 +5,32 @@
 #ifdef PICKER_MEDIA
 @import DKImagePickerController;
 
-@interface FilePickerPlugin() <DKImageAssetExporterObserver>
+@protocol CustomPHPickerViewControllerDelegate <NSObject>
+- (void)customPickerViewDidDisappear;
+@end
+
+@interface CustomPHPickerViewController : UIViewController
+@property (nonatomic, weak) id<CustomPHPickerViewControllerDelegate> customDelegate;
+@end
+
+@implementation CustomPHPickerViewController
+- (id)initWithPicker: (PHPickerViewController *)pickerViewController  API_AVAILABLE(ios(14)){
+    if (self = [super initWithNibName:nil bundle:nil]) {
+        self.modalInPresentation = NO;
+        [self addChildViewController:pickerViewController];
+        [pickerViewController didMoveToParentViewController:self];
+        [self.view addSubview:pickerViewController.view];
+    }
+    return self;
+}
+- (void)viewDidDisappear:(BOOL)animated {
+    [super viewDidDisappear:animated];
+    [self.customDelegate customPickerViewDidDisappear];
+}
+@end
+
+
+@interface FilePickerPlugin() <DKImageAssetExporterObserver, CustomPHPickerViewControllerDelegate>
 #else
 @interface FilePickerPlugin()
 #endif
@@ -194,9 +219,10 @@
             config.selectionLimit = 0;
         }
 
-        PHPickerViewController *pickerViewController = [[PHPickerViewController alloc] initWithConfiguration:config];
-        pickerViewController.delegate = self;
-        pickerViewController.presentationController.delegate = self;
+        PHPickerViewController *rawPicker = [[PHPickerViewController alloc] initWithConfiguration:config];
+        CustomPHPickerViewController *pickerViewController = [[CustomPHPickerViewController alloc] initWithPicker:rawPicker];
+        rawPicker.delegate = self;
+        pickerViewController.customDelegate = self;
         [[self viewControllerWithWindow:nil] presentViewController:pickerViewController animated:YES completion:nil];
         return;
     }
@@ -598,6 +624,14 @@ didPickDocumentsAtURLs:(NSArray<NSURL *> *)urls{
 #ifdef PICKER_MEDIA
 - (void)presentationControllerDidDismiss:(UIPresentationController *)controller {
     Log(@"FilePicker canceled");
+    if (self.result != nil) {
+        self.result(nil);
+        self.result = nil;
+    }
+}
+
+- (void)customPickerViewDidDisappear {
+    Log(@"ViewControllerDidDisappear");
     if (self.result != nil) {
         self.result(nil);
         self.result = nil;
