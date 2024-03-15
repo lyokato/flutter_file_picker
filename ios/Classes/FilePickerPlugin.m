@@ -197,7 +197,10 @@
         PHPickerViewController *pickerViewController = [[PHPickerViewController alloc] initWithConfiguration:config];
         pickerViewController.delegate = self;
         pickerViewController.presentationController.delegate = self;
-        [[self viewControllerWithWindow:nil] presentViewController:pickerViewController animated:YES completion:nil];
+        [[UIApplication sharedApplication] beginIgnoringInteractionEvents];
+        [[self viewControllerWithWindow:nil] presentViewController:pickerViewController animated:YES completion:^{
+          [[UIApplication sharedApplication] endIgnoringInteractionEvents];
+        }];
         return;
     }
 #endif
