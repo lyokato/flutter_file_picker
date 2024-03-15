@@ -1,6 +1,27 @@
 #import "FilePickerPlugin.h"
 #import "FileUtils.h"
 #import "ImageUtils.h"
+#import <UIKit/UIKit.h>
+
+@interface UIWindow (InterractionEvents)
+- (void)beginIgnoringInteractionEvents;
+- (void)endIgnoringInteractionEvents;
+@end
+
+@implementation UIWindow (InterractionEvents)
+
+  - (void)beginIgnoringInteractionEvents {
+    UIView *overlayView = [[UIView alloc] initWithFrame:self.bounds];
+    overlayView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    overlayView.tag = 10000;
+    [self addSubview:overlayView];
+}
+
+- (void)endIgnoringInteractionEvents {
+    UIView *overlayView = [self viewWithTag:10000];
+    [overlayView removeFromSuperview];
+}
+@end
 
 #ifdef PICKER_MEDIA
 @import DKImagePickerController;
@@ -197,9 +218,9 @@
         PHPickerViewController *pickerViewController = [[PHPickerViewController alloc] initWithConfiguration:config];
         pickerViewController.delegate = self;
         pickerViewController.presentationController.delegate = self;
-        [[UIApplication sharedApplication] beginIgnoringInteractionEvents];
+        [[UIApplication sharedApplication].delegate.window beginIgnoringInteractionEvents];
         [[self viewControllerWithWindow:nil] presentViewController:pickerViewController animated:YES completion:^{
-          [[UIApplication sharedApplication] endIgnoringInteractionEvents];
+          [[UIApplication sharedApplication].delegate.window endIgnoringInteractionEvents];
         }];
         return;
     }
